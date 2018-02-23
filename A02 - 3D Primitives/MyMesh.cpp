@@ -274,11 +274,81 @@ void MyMesh::GenerateCone(float a_fRadius, float a_fHeight, int a_nSubdivisions,
 
 	Release();
 	Init();
+	float baseHeight = -a_fHeight / 2;
 
 	// Replace this with your code
-	GenerateCube(a_fRadius * 2.0f, a_v3Color);
-	// -------------------------------
+	//GenerateCube(a_fRadius * 2.0f, a_v3Color);
 
+	//const int cPointNumber = a_nSubdivisions;
+	//vector3 conePoints[cPointNumber];
+
+	std::vector <vector3> conePoints;
+	vector3 tip(0.0f, a_fHeight / 2, 0.0f);//0 top
+	vector3 base(0.0f, baseHeight, 0.0f);//1 bottom center
+
+	bool firstPoint = true;
+	float theta = 0;
+	for (int i = 0; i < a_nSubdivisions; i++) {
+		theta = ((i* (2 * PI)) / a_nSubdivisions);
+		conePoints.push_back(vector3((cos(theta)*a_fRadius), baseHeight, (sin(theta)*a_fRadius)));
+
+		//after the first point, I can instantly make the needed triangles with the previous point, I see no reason to wait for all the points to be in the vector and loop through a second time.
+		if (firstPoint == true) {
+			firstPoint = false;
+		}
+
+		else if (firstPoint == false) {
+			AddTri(conePoints[i - 1], conePoints[i], tip);
+			AddTri(conePoints[i], conePoints[i - 1], base);
+		}
+
+		else {
+			std::cout<<"something went wrong";
+		}
+		
+
+	}
+
+	//reconnect to the start
+	AddTri(conePoints[a_nSubdivisions - 1], conePoints[0], tip);
+	AddTri(conePoints[0], conePoints[a_nSubdivisions - 1], base);
+
+	/*conePoints.push_back(vector3 (0.0f, a_fHeight / 2, 0.0f)); //0 top
+	conePoints.push_back(vector3 (0.0f, baseHeight, 0.0f));//1 bottom center
+	conePoints.push_back (vector3 (0.0f, baseHeight, a_fRadius));//2 bottom front*/
+
+
+
+	//AddTri(conePoints[1], conePoints[2], conePoints[0]);
+
+	/*
+	//for the moment, let's assume subdivisions is 3
+	vector3 tip(0.0f, a_fHeight/2, 0.0f); //0 top
+	vector3 point1(a_fRadius, baseHeight, -a_fRadius); //1 bottom right
+	vector3 point2(-a_fRadius, baseHeight, -a_fRadius);//2 bottom left
+	vector3 point3(0.0f, baseHeight, a_fRadius);//3 bottom front
+	vector3 base(0.0f, baseHeight, 0.0f);//3 bottom center
+
+
+	//screw me apparently addTri is a thing.
+	AddVertexPosition(point3);
+	AddVertexPosition(point1);
+	AddVertexPosition(tip);
+
+	AddVertexPosition(point2);
+	AddVertexPosition(point3);
+	AddVertexPosition(tip);
+
+	AddVertexPosition(point1);
+	AddVertexPosition(point2);
+	AddVertexPosition(tip);
+
+	AddVertexPosition(point2);
+	AddVertexPosition(point1);
+	AddVertexPosition(point3);
+	*/
+
+	// -------------------------------
 	// Adding information about color
 	CompleteMesh(a_v3Color);
 	CompileOpenGL3X();
@@ -300,7 +370,48 @@ void MyMesh::GenerateCylinder(float a_fRadius, float a_fHeight, int a_nSubdivisi
 	Init();
 
 	// Replace this with your code
-	GenerateCube(a_fRadius * 2.0f, a_v3Color);
+
+	float topHeight = a_fHeight / 2;
+	float baseHeight = -a_fHeight / 2;
+	std::vector <vector3> cylTopPoints;
+	std::vector <vector3> cylBasePoints;
+	vector3 topCenter(0.0f, topHeight, 0.0f);//0 top
+	vector3 base(0.0f, baseHeight, 0.0f);//1 bottom center
+
+	bool firstPoint = true;
+	float theta = 0;
+	for (int i = 0; i < a_nSubdivisions; i++) {
+		theta = ((i* (2 * PI)) / a_nSubdivisions);
+		cylTopPoints.push_back(vector3((cos(theta)*a_fRadius), topHeight, (sin(theta)*a_fRadius)));
+		cylBasePoints.push_back(vector3((cos(theta)*a_fRadius), baseHeight, (sin(theta)*a_fRadius)));
+
+		//after the first point, I can instantly make the needed triangles with the previous point, I see no reason to wait for all the points to be in the vector and loop through a second time.
+		if (firstPoint == true) {
+			firstPoint = false;
+		}
+
+		else if (firstPoint == false) {
+			//make triangle on top and bottom
+			AddTri(cylTopPoints[i], cylTopPoints[i - 1], topCenter);
+			AddTri(cylBasePoints[i - 1], cylBasePoints[i], base);
+
+			AddQuad(cylBasePoints[i - 1],  cylTopPoints [i-1], cylBasePoints[i], cylTopPoints[i]);
+			
+		}
+
+		else {
+			std::cout << "something went wrong";
+		}
+
+		
+
+	}
+	//reconnect to the start
+	AddTri(cylTopPoints[0], cylTopPoints[a_nSubdivisions - 1], topCenter);
+	AddTri(cylBasePoints[a_nSubdivisions - 1], cylBasePoints[0], base);
+
+	AddQuad(cylBasePoints[a_nSubdivisions - 1], cylTopPoints[a_nSubdivisions - 1], cylBasePoints[0], cylTopPoints[0] );
+
 	// -------------------------------
 
 	// Adding information about color
@@ -330,7 +441,66 @@ void MyMesh::GenerateTube(float a_fOuterRadius, float a_fInnerRadius, float a_fH
 	Init();
 
 	// Replace this with your code
-	GenerateCube(a_fOuterRadius * 2.0f, a_v3Color);
+
+	float topHeight = a_fHeight / 2;
+	float baseHeight = -a_fHeight / 2;
+
+	//only need points in 4 rings.  In terms of coding time, it's quickest (and likely crudest) to put each of them in its own vector, as while drawing, one number in the for loop will give me 4 points.
+	std::vector <vector3> tubeInnerTopPoints;
+	std::vector <vector3> tubeOuterTopPoints;
+	std::vector <vector3> tubeInnerBasePoints;
+	std::vector <vector3> tubeOuterBasePoints;
+
+
+	bool firstPoint = true;
+	float theta = 0;
+	for (int i = 0; i < a_nSubdivisions; i++) {
+		theta = ((i* (2 * PI)) / a_nSubdivisions);
+		//make rings for the inner points on the top and bottom
+		tubeInnerTopPoints.push_back(vector3((cos(theta)*a_fInnerRadius), topHeight, (sin(theta)*a_fInnerRadius)));
+		tubeInnerBasePoints.push_back(vector3((cos(theta)*a_fInnerRadius), baseHeight, (sin(theta)*a_fInnerRadius)));
+
+		//make rings for the outer points on the top and bottom
+		tubeOuterTopPoints.push_back(vector3((cos(theta)*a_fOuterRadius), topHeight, (sin(theta)*a_fOuterRadius)));
+		tubeOuterBasePoints.push_back(vector3((cos(theta)*a_fOuterRadius), baseHeight, (sin(theta)*a_fOuterRadius)));
+
+		//after the first point, I can instantly make the needed triangles with the previous point, I see no reason to wait for all the points to be in the vector and loop through a second time.
+		if (firstPoint == true) {
+			firstPoint = false;
+		}
+
+		else if (firstPoint == false) {
+			//make triangle on top and bottom
+			//top ring
+			AddQuad(tubeOuterTopPoints[i], tubeOuterTopPoints[i-1], tubeInnerTopPoints[i], tubeInnerTopPoints[i-1]);
+
+			//bottom ring
+			AddQuad(tubeOuterBasePoints[i-1], tubeOuterBasePoints[i], tubeInnerBasePoints[i-1], tubeInnerBasePoints[i]);
+
+			//outside
+			AddQuad( tubeOuterBasePoints[i], tubeOuterBasePoints[i - 1],  tubeOuterTopPoints[i], tubeOuterTopPoints[i - 1]) ;
+
+			//inside
+			AddQuad(tubeInnerBasePoints[i - 1], tubeInnerBasePoints[i], tubeInnerTopPoints[i - 1], tubeInnerTopPoints[i]);
+		}
+
+		else {
+			std::cout << "something went wrong";
+		}
+
+
+
+	}
+	//reconnect top ring the start
+	AddQuad(tubeInnerTopPoints[a_nSubdivisions - 1], tubeInnerTopPoints[0],  tubeOuterTopPoints[a_nSubdivisions - 1], tubeOuterTopPoints[0] );
+	//reconnect bottom ring to start
+	AddQuad(tubeInnerBasePoints[0], tubeInnerBasePoints[a_nSubdivisions - 1], tubeOuterBasePoints[0], tubeOuterBasePoints[a_nSubdivisions - 1]);
+
+	//reconnect outter face to front
+	AddQuad(tubeOuterBasePoints[0], tubeOuterBasePoints[a_nSubdivisions - 1],  tubeOuterTopPoints[0], tubeOuterTopPoints[a_nSubdivisions - 1]);
+
+	//reconnect inner face to front
+	AddQuad(tubeInnerBasePoints[a_nSubdivisions - 1], tubeInnerBasePoints[0], tubeInnerTopPoints[a_nSubdivisions - 1], tubeInnerTopPoints[0]);
 	// -------------------------------
 
 	// Adding information about color
@@ -371,6 +541,16 @@ void MyMesh::GenerateTorus(float a_fOuterRadius, float a_fInnerRadius, int a_nSu
 }
 void MyMesh::GenerateSphere(float a_fRadius, int a_nSubdivisions, vector3 a_v3Color)
 {
+
+	/*//Creating a vertex (sphereLongi) containing a set of vertexes on a given longitude of the sphere.  Each of those vertexes holds a vertex3 for a specific space.  
+	Thus the first layer works as the longitude and the second as the lattitude of any given point.  figure out how many vertexes of how many vertex3s there are with the subdivision that's given.
+	Top point and bottom point are static, so technically, the sphere will have 2 more vertical "sections" than there are subdivisions.  Allocate y value for each point based on
+	number of subdivisions(+ 2 as the arcs don't need to have the first and last point along a given line) and then calculate the x y and z positions based on that height*/
+
+	/*PROBLEMS: the height division for each j vecor3 is kind of wonky, as it would be redundant to include them (as they're defined elsewhere and I only need one of each), I'm not including the
+	top and bottom points for each i(set of points across a given longitude) as they already exist.  However, my current method of dividing them leads to the top and bottom sticking out, and 
+	unevenly at that.*/
+
 	if (a_fRadius < 0.01f)
 		a_fRadius = 0.01f;
 
@@ -387,8 +567,114 @@ void MyMesh::GenerateSphere(float a_fRadius, int a_nSubdivisions, vector3 a_v3Co
 	Init();
 
 	// Replace this with your code
-	GenerateCube(a_fRadius * 2.0f, a_v3Color);
+	
+	//std::vector <vector3> cylTopPoints;
+	//std::vector <vector3> cylBasePoints;
+
+	//make sure to set how many vectors it will have so it doesn't become angry when it's time to reallocate.  It throws an error if I don't do this.
+	std::vector <std::vector<vector3>> sphereLongi(a_nSubdivisions * a_nSubdivisions);
+	vector3 topCenter(0.0f, a_fRadius, 0.0f);//0 top
+	vector3 base(0.0f, - a_fRadius, 0.0f);//1 bottom center
+
+	bool firstPoint = true;
+	float theta = 0.0f;
+	for (int i = 0; i < a_nSubdivisions; i++) {
+		theta = ((i* (2 * PI)) / a_nSubdivisions);
+		sphereLongi.push_back(std::vector<vector3>());
+		
+		float currentRadius = 0;
+		//int arcPlace = 1;
+		
+
+		for (int j = 0; j < a_nSubdivisions; j++)
+		{
+
+			//for even height
+			float heightTheta = (PI / (a_nSubdivisions + 2.0f) * (j + 1.0f));
+			//float currentHeight = ( (-(a_fRadius)) *(sin(heightTheta))  + a_fRadius);
+
+			//old, broken attempts to get even height divisions
+			float currentHeight = ((a_nSubdivisions + 1.0f) * ((a_fRadius * 2.0f) / (a_nSubdivisions + 2.0f)) - (j * ((a_fRadius * 2.0f)) / (a_nSubdivisions + 2.0f)));
+			//float reverseHeight = ((j + 1.0f * ((a_fRadius * 2.0f)) / (a_nSubdivisions + 2.0f)));
+			//if (currentHeight <= ((a_nSubdivisions + 2.0f) * ((a_fRadius * 2.0f)/( (a_nSubdivisions + 2.0f))) / 2) ) {
+				
+			//}
+
+			float currentRadius = (glm::sqrt( (currentHeight * ((a_fRadius*2) - currentHeight))) );
+
+			
+			sphereLongi[i].push_back(vector3((cos(theta)*currentRadius), (currentHeight  - a_fRadius), (sin(theta)*currentRadius)));
+
+			
+			//currentHeight = currentHeight - ((a_fRadius* 2.0f) / (a_nSubdivisions + 2.0f));
+		}
+		
+		
+
+		//after the first point, I can instantly make the needed triangles with the previous point, I see no reason to wait for all the points to be in the vector and loop through a second time.
+		if (firstPoint == true) {
+			firstPoint = false;
+		}
+
+		else if (firstPoint == false) {
+
+			//draw squares on the sides
+			bool innerFirstPoint = true;
+
+			for (int j = 0; j < a_nSubdivisions; j++) {
+				
+				//I just realized that I should probably just check if j == 0 here, and same for all the firstPoint checks in the rest of the code.  I don't have time to change all of it unfortunately. 
+				if (innerFirstPoint == true) {
+					innerFirstPoint = false;
+				}
+
+				else if (innerFirstPoint == false && firstPoint == false) {
+					//make square for this part.  essentially, i is x value, j is y value (j goes top to bottom)
+					AddQuad(sphereLongi[i - 1][j - 1], sphereLongi[i][j - 1], sphereLongi[i - 1][j], sphereLongi[i][j] );
+
+				}
+				else {
+					std::cout << "something went wrong on the inner check";
+				}
+			}
+			//make triangle on top
+			AddTri(sphereLongi[i][0], sphereLongi[i-1][0], topCenter);
+			//make triangle on bottom
+			AddTri(sphereLongi[i - 1][a_nSubdivisions - 1], sphereLongi[i][a_nSubdivisions - 1],  base);
+
+			
+			
+		}
+
+		else {
+			std::cout << "something went wrong";
+		}
+
+
+		
+
+		
+
+
+
+	}
+
+	
+	//reconnect top and bottom triangles to the start
+	AddTri(sphereLongi[0][0], sphereLongi[a_nSubdivisions - 1][0], topCenter);
+	AddTri(sphereLongi[a_nSubdivisions - 1][a_nSubdivisions - 1], sphereLongi[0][a_nSubdivisions - 1], base);
+
+	//reconnect faces to start
+
+	//AddQuad(cylBasePoints[a_nSubdivisions - 1], cylTopPoints[a_nSubdivisions - 1], cylBasePoints[0], cylTopPoints[0]);
 	// -------------------------------
+
+	for (int j = 0; j < a_nSubdivisions; j++) {
+		if (j != 0) {
+			AddQuad(sphereLongi[0][j], sphereLongi[a_nSubdivisions - 1][j],  sphereLongi[0][j-1], sphereLongi[a_nSubdivisions - 1][j-1]);
+		}
+	}
+
 
 	// Adding information about color
 	CompleteMesh(a_v3Color);
